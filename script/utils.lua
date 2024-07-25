@@ -72,3 +72,27 @@ function Get_Or_Create(a_table, key)
   end
   return subtable
 end
+
+-- Returns a unique name for a stop based on the unit number, or nil if the stop name already contains the unit number.
+-- This is used to disambiguate stops that would otherwise have the same name so we don't have to create temporary stops in the train schedule.
+function Disambiguated_Stop_Name(stop) 
+  local unit_number = stop.unit_number
+  local stop_name = stop.backer_name
+
+  local suffix = format("[%d]", unit_number)
+
+  local existing_suffix_start, existing_suffix_end = string.find(stop_name, "%[%d+%]$")
+
+  if existing_suffix_start then
+
+    local existing_suffix = string.sub(stop_name, existing_suffix_start, existing_suffix_end)
+    if existing_suffix == suffix then
+      return nil
+    end
+
+    -- Remove existing numeric suffix. This could happen if the stop was copy/pasted, resulting in a mismatch between the stop name and the new unit number.
+    stop_name = string.sub(stop_name, 1, existing_suffix_start-1)
+  end
+    
+  return format("%s %s", stop_name, suffix)
+end

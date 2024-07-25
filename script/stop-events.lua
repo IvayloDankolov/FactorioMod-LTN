@@ -13,6 +13,11 @@ function CreateStop(entity)
     if debug_log then log("(CreateStop) duplicate stop unit number "..entity.unit_number) end
     return
   end
+  -- Rename instantly on creation to avoid duplicate stop names messing up deliveries in case an existing stop was copy/pasted
+  -- TODO: checking the name for 'depot' is a bit dirty, we should probably be doing this on signal update instead
+  if entity.backer_name:find("depot") == nil then
+    entity.backer_name = Disambiguated_Depot_Name(entity)
+  else
   local stop_offset = ltn_stop_entity_names[entity.name]
   local posIn, posOut, rotOut, search_area
   --log("Stop created at "..entity.position.x.."/"..entity.position.y..", orientation "..entity.direction)

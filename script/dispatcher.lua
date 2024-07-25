@@ -477,6 +477,11 @@ function ProcessRequest(reqIndex, request)
   local toID = request.stopID
   local requestStation = global.LogisticTrainStops[toID]
 
+  requestDisambiguatedName = Disambiguated_Stop_Name(requestStation.entity)
+  if requestDisambiguatedName ~= nil then
+    requestStation.entity.backer_name = requestDisambiguatedName
+  end
+  
   if not requestStation or not (requestStation.entity and requestStation.entity.valid) then
     return nil
   end
@@ -550,6 +555,11 @@ function ProcessRequest(reqIndex, request)
   end
 
   local providerData = providers[1] -- only one delivery/request is created so use only the best provider
+  local disambiguatedName = Disambiguated_Stop_Name(providerData.entity)
+  if disambiguatedName ~= nil then
+    providerData.entity.backer_name = disambiguatedName
+  end
+
   local fromID = providerData.entity.unit_number
   local from_rail = providerData.entity.connected_rail
   local from_rail_direction = providerData.entity.connected_rail_direction
@@ -666,26 +676,10 @@ function ProcessRequest(reqIndex, request)
   -- create schedule
   -- local selectedTrain = global.Dispatcher.availableTrains[trainID].train
   local depot = global.LogisticTrainStops[selectedTrain.station.unit_number]
+
   local schedule = {current = 1, records = {}}
   schedule.records[#schedule.records + 1] = NewScheduleRecord(depot.entity.backer_name, "inactivity", depot_inactivity)
-
-  -- make train go to specific stations by setting a temporary waypoint on the rail the station is connected to
-  -- schedules cannot have temporary stops on a different surface, those need to be added when the delivery is updated with a train on a different surface
-  if from_rail and from_rail_direction
-  and depot.entity.surface == from_rail.surface then
-    schedule.records[#schedule.records + 1] = NewTempScheduleRecord(from_rail, from_rail_direction)
-  else
-    if debug_log then log("(ProcessRequest) Warning: creating schedule without temporary stop for provider.") end
-  end
   schedule.records[#schedule.records + 1] = NewScheduleRecord(from, "item_count", "≥", loadingList)
-
-  if to_rail and to_rail_direction
-  and depot.entity.surface == to_rail.surface
-  and (from_rail and to_rail.surface == from_rail.surface) then
-    schedule.records[#schedule.records + 1] = NewTempScheduleRecord(to_rail, to_rail_direction)
-  else
-    if debug_log then log("(ProcessRequest) Warning: creating schedule without temporary stop for requester.") end
-  end
   schedule.records[#schedule.records + 1] = NewScheduleRecord(to, "item_count", "=", loadingList, 0)
 
   local shipment = {}
